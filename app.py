@@ -1,8 +1,11 @@
+import os
 import asyncio
 import logging
 import logging.config
 import argparse
+import sentry_sdk
 from random import randint
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 
 MAX_DELAY_SECONDS = 5
@@ -58,6 +61,13 @@ async def exception(event: 'asyncio.Event'):
 
 
 def create_tasks(loop, event, exception_enable):
+    sentry_dsn = os.environ.get('SENTRY_DSN', None)
+    if sentry_dsn:
+        sentry_logging = LoggingIntegration(
+            level=logging.INFO,
+            event_level=logging.ERROR
+        )
+        sentry_sdk.init(sentry_dsn, traces_sample_rate=1.0, integrations=[sentry_logging])
     functions = [debug, info, warning, error]
     if exception_enable:
         functions.append(exception)
